@@ -1,0 +1,5 @@
+JSON 2 POJO
+
+json2pojo -h for help
+
+json2pojo -l prints out some information about the limitations and features.
