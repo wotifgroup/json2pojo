@@ -74,7 +74,7 @@ class FieldDetails
 end
 
 def get_java_type(value, field_details, key)
-	field_details.write_class_file = false
+  field_details.write_class_file = false
   java_type = "UNKNOWN"
   if value.is_a?(Fixnum)
     java_type = "Long"
@@ -84,11 +84,11 @@ def get_java_type(value, field_details, key)
     inner_value = get_java_type(value[0], field_details, key)
     if inner_value == "UNKNOWN"
       inner_value = to_java_class_name(key)
-			if @do_chop
-			  inner_value.chop!
-			end
-			setup_data(value[0], key)
-			field_details.write_class_file = true
+      if @do_chop
+        inner_value.chop!
+      end
+      setup_data(value[0], key)
+      field_details.write_class_file = true
     end
     java_type = "List<" + inner_value + ">"
   elsif value.is_a?(String)
@@ -115,9 +115,9 @@ def setup_data(hash, parent)
     field_details = FieldDetails.new
     field_details.field_name = key
     field_details.parent = parent
-	  field_details.write_class_file = true
+    field_details.write_class_file = true
     if value.is_a?(Array)
-		  process_array(value, field_details, key, parent)
+      process_array(value, field_details, key, parent)
     elsif value.is_a?(Hash)
       @java_classes[key] = parent
       field_details.type = "Hash"
@@ -219,8 +219,8 @@ end
 def write_file(value) 
  
   if value
-	  return value.write_class_file
-	end
+    return value.write_class_file
+  end
   return true
 end
 
@@ -571,6 +571,7 @@ if __FILE__ == $PROGRAM_NAME
 
   if !File.exists?(@config.json_example_file)
     puts "JSON example file: #{@config.json_example_file} does not exist!"
+    puts "Try -h flag for help"
     exit -1
   end
 
