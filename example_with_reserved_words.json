@@ -1,0 +1,48 @@
+{
+  "example_id": "2342342",
+  "status": "approved",
+  "created": "2011-11-01T14:20:33",
+  "modified": "2011-11-01T14:20:33",
+  "contact_details":{
+    "name": "Thomas A. Anderson",
+    "phone": "074544544"
+  },
+  "payment": {
+    "currency_code": "USD",
+    "payment_outstanding": 0.0,
+    "nett_amount": 444.0
+  },
+  "order_items": [
+    {
+      "id": 6323440,
+      "items": [
+        {
+          "advertised_amount": 222.0,
+          "nett_amount": 200.0,
+          "item_name": "widget 1",
+          "description":  "widget 1 description"
+        }
+        
+      ]
+    }
+      
+    ]
+  ,
+
+  "private": {
+    "email":"blahblah@somewhere.com",
+    "links":  [
+        {"href":"/example/2342342/comments", "rel":"comment", "group":"private"}
+        ],    
+    "payment_details": [{
+      "card":{"masked_card": "411111XXXXXX1234", "card_name": "Mr. Anderson", "bin": "411111"},
+      "voucher":{"voucher_id": "24242342", "name":"Agent Smith"}
+    }]
+  },
+
+  "links": [
+    {"href":"/example/2342342", "rel":"example", "switch":"public"}  
+  ]
+    
+}
+

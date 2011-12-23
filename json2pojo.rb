@@ -28,7 +28,9 @@ class Configuration
   attr_accessor :java_class_file_header, :package, :json_example_file, :top_level_class, 
                 :output_directory,
                 :ignore_unknown_properties_annotation, :ignore_unknown_properties_import,
-                :json_property_import, :json_serialize_import
+                :json_property_import, :json_serialize_import,
+                :field_suffix, :field_prefix,
+                :class_suffix, :class_prefix
 
   def initialize
     # File name of text to put at top of file, e.g. author, copyright details, etc
@@ -61,6 +63,11 @@ class Configuration
     self.json_property_import = "import org.codehaus.jackson.annotate.JsonProperty;"
     self.json_serialize_import = "import org.codehaus.jackson.map.annotate.JsonSerialize;\n" +
                  "import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;"
+
+    self.field_suffix = ""
+    self.field_prefix = ""
+    self.class_suffix = ""
+    self.class_prefix = ""
   end
 end
 
@@ -87,6 +94,7 @@ def get_java_type(value, field_details, key)
       if @do_chop
         inner_value.chop!
       end
+      inner_value = add_class_prefix_and_suffix(inner_value)
       setup_data(value[0], key)
       field_details.write_class_file = true
     end
@@ -161,6 +169,12 @@ def to_java_field_name(field_name)
   separator = false
   first = true
   leave_lowercase = false
+  if @config.field_prefix != ""
+    field_name = @config.field_prefix + "_" + field_name
+  end
+  if @config.field_suffix != ""
+    field_name = field_name + "_" + @config.field_suffix
+  end
   field_name.each_char do |c|
     if separator
       if leave_lowercase
@@ -224,11 +238,27 @@ def write_file(value)
   return true
 end
 
+def add_class_prefix_and_suffix(class_name)
+  if class_name == "String" || class_name == "Double" || class_name == "Long"
+    return class_name
+  end
+  if @config.class_prefix != ""
+    class_name = @config.class_prefix + class_name
+  end
+  if @config.class_suffix != ""
+    class_name = class_name + @config.class_suffix
+  end
+  return class_name
+end
+
 def java_class_output(class_name, parent)
 
   proper_class_name = to_java_class_name(class_name)
   if @java_lists[class_name]
     proper_class_name.chop! if @do_chop
+  end
+  if class_name != @config.top_level_class
+    proper_class_name = add_class_prefix_and_suffix(proper_class_name)
   end
 
   field_list = ""
@@ -241,10 +271,12 @@ def java_class_output(class_name, parent)
     @java_fields[class_name].each do |field|
       field_type = @field_info[field].type
       method_name = to_java_method_name(field)
+      method_name = add_class_prefix_and_suffix(method_name)
       java_field = to_java_field_name(field)
       if @java_fields[field]
         field_type = to_java_class_name(field)
         method_name = to_java_method_name(field_type)
+        method_name = add_class_prefix_and_suffix(method_name)
       end
       if (@java_lists[field] and @java_lists[field] == class_name)
         if @field_info[field].array_type
@@ -252,8 +284,11 @@ def java_class_output(class_name, parent)
         elsif @do_chop
           field_type.chop!
         end
+        field_type = add_class_prefix_and_suffix(field_type)
         field_type = "List<#{field_type}>"
         list_import = "import java.util.List;"
+      else
+        field_type = add_class_prefix_and_suffix(field_type)
       end
       json_annotation = ""
       if java_field != field
@@ -266,6 +301,7 @@ def java_class_output(class_name, parent)
       end
       field_list = field_list + json_annotation + "  private #{field_type} #{java_field};\n"
       getters_and_setters = getters_and_setters + <<GS
+
   public #{field_type} get#{method_name}() {
     return #{java_field};
   }
@@ -331,12 +367,24 @@ def parse_args args
     if current_item == "-t"
       @config.top_level_class = arg_ring.shift
     end
+    if current_item == "-fs"
+      @config.field_suffix = arg_ring.shift
+    end
+    if current_item == "-fp"
+      @config.field_prefix = arg_ring.shift
+    end
+    if current_item == "-cs"
+      @config.class_suffix = arg_ring.shift
+    end
+    if current_item == "-cp"
+      @config.class_prefix = arg_ring.shift
+    end
     if current_item == "-n"
       @do_chop = false
     end
     if current_item == "-h" || current_item == "-?"
       puts <<HELP
-Usage:  json2pojo.rb [-h][-?] [-e <json_example_file>] [-c <java_class_file_header>] [-p <java_package_name>] [-o <output_directory>] [-t <top_level_class>] [-n]
+Usage:  json2pojo.rb [-h][-?] [-e <json_example_file>] [-c <java_class_file_header>] [-p <java_package_name>] [-o <output_directory>] [-t <top_level_class>] [-n] [-fs <field_suffix>] [-fp <field_prefix>] [-cs <class_suffix>] [-cp <class_prefix>]
 
   -h or -?  This help message
   -e        The example JSON file to generate POJOs from. Default: #{@config.json_example_file}
@@ -345,6 +393,10 @@ Usage:  json2pojo.rb [-h][-?] [-e <json_example_file>] [-c <java_class_file_head
   -o        Output directory for generated java files, which is created if not exists.  Default: #{@config.output_directory}
   -t        The name of the java top level class to be generated.  Default: #{@config.top_level_class}
   -n        Do not chop the last character off names that are arrays/lists.  Default: chop
+  -fs       Add the supplied value as the suffix to field name.  Default: none
+  -fp       Add the supplied value as the prefix to field name.  Default: none
+  -cs       Add the supplied value as the suffix to class name.  Default: none
+  -cp       Add the supplied value as the prefix to class name.  Default: none
 HELP
       exit 0
     end
