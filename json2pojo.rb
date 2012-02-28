@@ -27,6 +27,7 @@ require 'json'
 class Configuration
   attr_accessor :java_class_file_header, :package, :json_example_file, :top_level_class, 
                 :output_directory,
+                :unknown_class,
                 :ignore_unknown_properties_annotation, :ignore_unknown_properties_import,
                 :json_property_import, :json_serialize_import,
                 :field_suffix, :field_prefix,
@@ -52,6 +53,11 @@ class Configuration
     # The output directory for the generated classes
     # Override with -o
     self.output_directory = "output"
+
+    # If types cannot be inferred from example json, they will be represented with Object unless overridden.
+    # In which case, UNKNOWN will be used. This will prohibit the class from compiling.
+    # Override with -u
+    self.unknown_class = "Object"
 
     #
     # Annotations and imports to put in the Java code based on Jackson.
@@ -82,14 +88,14 @@ end
 
 def get_java_type(value, field_details, key)
   field_details.write_class_file = false
-  java_type = "UNKNOWN"
+  java_type = @config.unknown_class
   if value.is_a?(Fixnum)
     java_type = "Long"
   elsif value.is_a?(Float)
     java_type = "Double"
   elsif value.is_a?(Array)
     inner_value = get_java_type(value[0], field_details, key)
-    if inner_value == "UNKNOWN"
+    if inner_value == @config.unknown_class
       inner_value = to_java_class_name(key)
       if @do_chop
         inner_value.chop!
@@ -101,6 +107,8 @@ def get_java_type(value, field_details, key)
     java_type = "List<" + inner_value + ">"
   elsif value.is_a?(String)
     java_type = "String"
+  elsif value.is_a?(TrueClass) || value.is_a?(FalseClass)
+    java_type = "boolean"
   end
   return java_type;
 end
@@ -364,6 +372,9 @@ def parse_args args
     if current_item == "-o"
       @config.output_directory = arg_ring.shift
     end
+    if current_item == "-u"
+      @config.unknown_class = "UNKNOWN"
+    end
     if current_item == "-t"
       @config.top_level_class = arg_ring.shift
     end
@@ -384,13 +395,14 @@ def parse_args args
     end
     if current_item == "-h" || current_item == "-?"
       puts <<HELP
-Usage:  json2pojo.rb [-h][-?] [-e <json_example_file>] [-c <java_class_file_header>] [-p <java_package_name>] [-o <output_directory>] [-t <top_level_class>] [-n] [-fs <field_suffix>] [-fp <field_prefix>] [-cs <class_suffix>] [-cp <class_prefix>]
+Usage:  json2pojo.rb [-h][-?] [-e <json_example_file>] [-c <java_class_file_header>] [-p <java_package_name>] [-o <output_directory>] [-u] [-t <top_level_class>] [-n] [-fs <field_suffix>] [-fp <field_prefix>] [-cs <class_suffix>] [-cp <class_prefix>]
 
   -h or -?  This help message
   -e        The example JSON file to generate POJOs from. Default: #{@config.json_example_file}
   -c        The text file inserted at the top of every java class generated. Default: #{@config.java_class_file_header}
   -p        Generated java is put in this package.  Default: #{@config.package}
   -o        Output directory for generated java files, which is created if not exists.  Default: #{@config.output_directory}
+  -u        Use UNKNOWN for types that cannot be inferred.  If set, unknown types will prohibit the parent class from compiling. Default: #{@config.unknown_class}
   -t        The name of the java top level class to be generated.  Default: #{@config.top_level_class}
   -n        Do not chop the last character off names that are arrays/lists.  Default: chop
   -fs       Add the supplied value as the suffix to field name.  Default: none
