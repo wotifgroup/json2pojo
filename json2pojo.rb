@@ -101,6 +101,8 @@ def get_java_type(value, field_details, key)
     java_type = "List<" + inner_value + ">"
   elsif value.is_a?(String)
     java_type = "String"
+  elsif value.is_a?(TrueClass) || value.is_a?(FalseClass)
+    java_type = "boolean"
   end
   return java_type;
 end
