@@ -108,7 +108,7 @@ def get_java_type(value, field_details, key)
   elsif value.is_a?(String)
     java_type = "String"
   elsif value.is_a?(TrueClass) || value.is_a?(FalseClass)
-    java_type = "boolean"
+    java_type = "Boolean"
   end
   return java_type;
 end
@@ -247,7 +247,7 @@ def write_file(value)
 end
 
 def add_class_prefix_and_suffix(class_name)
-  if class_name == "String" || class_name == "Double" || class_name == "Long"
+  if class_name == "String" || class_name == "Double" || class_name == "Long" || class_name == "Boolean"
     return class_name
   end
   if @config.class_prefix != ""
